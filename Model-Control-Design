@@ -1,0 +1,54 @@
+%% Build the state-space model of Active Suspension System using the following Physical parameters
+mb = 300;    % kg 
+mw = 60;     % kg
+bs = 1000;   % N/m/s
+ks = 16000;  % N/m
+kt = 190000; % N/m
+% State Matrice
+A = [ 0         0      1       0;
+      0         0      0       1;
+      -ks/mb -ks/mb -bs/mb bs/mb; 
+      ks/mw (-ks-kt)/mw bs/mw -bs/mw]; 
+B1 = [ 0; 0; kt/mb;kt/mw];
+B2 = [ 0; 0; 1/mb;-1/mw];
+% y measurement output
+C1 = [1 0 0 0;0 0 1 0]; 
+% z performance error output
+C2 = [0 1 0 0;0 0 0 1];  
+D11 = [0;0]; D12 = [0;0]; D21 = [0;0]; D22 = [0;0];
+% To form plant G, augment as shown
+B = [B1 B2];
+C = [C2; C1];
+D = [D11 D12;D21 D22];
+%% The state-space model is formed using a function ss
+G = ss(A,B,C,D);
+%% To see a step response, let's define the inputs and outputs relationships. There are two inputs and four outputs. 
+G.StateName = {'xb';'xw';'/dot{x}_b(m/s^2)';'/dot{x}_w(m/s^2)'};
+G.InputName = {'Road Bump';'Input force'};
+G.OutputName = {'xb';'/dot{x}_b';'xw';'/dot{x}_w'};
+%% To check for plant G controllability use the following:
+Co = rank(ctrb(A,B2)); unco_sys = length(A) - Co; % Checks controllability
+disp('No. of uncontr state = '); disp (unco_sys); % No of uncontrollable states should be 0. 
+%% Check for plant G Observability use the following:
+Ob = obsv(A,C); unob1 = length(A)-rank(Ob);
+disp('No. of unob state = '); disp (unob1); % No of unobervable states should be 0. 
+%% Display a step response plot by using 
+stepplot(G,'-',18); 
+grid on; % the grid was removed due to pr
+
+%% Road Profile \& H-Infinity Design]
+%% define the road profile
+t = 0:0.0025:10;
+roaddist = zeros(size(t));
+roaddist(501:601) = 0.04*(1-cos(8*pi*t(501:601)));
+roaddist(1501:1601) = -0.04*(1-cos(8*pi*t(1501:1601)));
+%% Nominal H infinity Control Matrices
+D11 = [0;0]; D12 = [0;0]; D21 = [0;0]; D22 = [0;0];
+B = [B1 B2]; % forms the B matrix
+C = [C2; C1]; % forms the C matrix
+Dn = [D11 D12;D21 D22];
+ncont = 1; % defines the control input
+nmeas = 3; % defines measurement outputs
+opts = hinfsynOptions('Display','on');
+Pn = ss(A,B,C,Dn); % forms the generalised state-space model
+[K,CL,gam,info] = hinfsyn(Pn,nmeas,ncont,opts); % design H infinity controller
