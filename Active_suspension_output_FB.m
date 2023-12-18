@@ -101,8 +101,10 @@ D11 = [0;0]; D12 = [0;0]; D21 = [0;0]; D22 = [0;0];
 B = [B1 B2];
 C = [C2; C1];
 Dn = [D11 D12;D21 D22];
+Dc = [0 0];
 ncont = 1;
-nmeas = 3; % vehicle body acceleration, wheel velocity and  
-opts = hinfsynOptions('Method','LMI','Display','on');
-Pn = ss(A,B,C,Dn);
+nmeas = 3; % vehicle body acceleration, wheel velocity and Suspension travel 
+%opts = hinfsynOptions('LimitRS',0.5,'RelTol',1e-6,'Method','LMI','LimitGain','on','AutoScale','off','Regularize','on','Display','on');
+%opts = hinfsynOptions('Method','MAXE','Display','on','LimitGain','off','RelTol',1e-3,'AutoScale','off','Regularize','on'); %Frequency approach 
+opts = hinfsynOptions('Method','RIC','RelTol',1e-3,'AutoScale','off','Display','on','Regularize','on');Pn = ss(A,B,C,Dn);
 [K,CL,gam,info] = hinfsyn(Pn,nmeas,ncont,opts);
